@@ -1,0 +1,18 @@
+{% if matches %}
+<ol>
+  {% for m in matches %}
+  <li class="match">
+    <h2><span class="code">{{ m.occupation.code }}</span>{{ m.occupation.title }}</h2>
+    <p class="teer">TEER {{ m.occupation.teer.value }} · {{ m.occupation.teer.description }}</p>
+    {% if m.matching_duties %}
+    <ul class="duties" aria-label="Duties that match">
+      {% for duty in m.matching_duties %}<li>{{ duty }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+  </li>
+  {% endfor %}
+</ol>
+<p class="note">Read each unit group's full description before choosing.</p>
+{% else %}
+<p>No unit group matched. Try describing what you do day to day.</p>
+{% endif %}
