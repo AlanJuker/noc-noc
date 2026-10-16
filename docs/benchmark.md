@@ -60,3 +60,16 @@ itself lists as easy to confuse.
 | + title repeated three times | 65.5% | 88.3% |
 
 Character 3–5-grams scored lower than words (56.8% top-1), despite tolerating typos.
+
+### Reranking with Claude
+
+`claude-opus-5-5` at low effort reranks the hybrid's top 10 and cites the official duties that match, by id
+(`21232-d3`). Codes outside the candidates, repeated codes and duty ids that don't belong to the code are
+dropped; candidates the model leaves out keep their hybrid order.
+
+**Not measured yet**: it needs an API key, and scoring all 5,468 titles would cost about $90. Compare it with
+the hybrid on the same fixed sample of 200 titles (about $3.50):
+
+```bash
+uv run noc-noc eval --method hybrid --method rerank --sample 200
+```
