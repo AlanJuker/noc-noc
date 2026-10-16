@@ -1,8 +1,6 @@
 import argparse
 import hashlib
-import os
 from functools import cache
-from pathlib import Path
 
 import httpx
 
@@ -13,8 +11,7 @@ from noc_noc.infrastructure import statcan
 from noc_noc.infrastructure.claude import ClaudeRankModel
 from noc_noc.infrastructure.dense import DenseRetriever, FastEmbedder, HybridRetriever
 from noc_noc.infrastructure.lexical import TfidfRetriever
-
-CACHE_DIR = Path(os.environ.get("NOC_CACHE", "data/cache"))
+from noc_noc.infrastructure.settings import CACHE_DIR
 
 
 @cache

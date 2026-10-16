@@ -6,9 +6,13 @@ license = "MIT"
 requires-python = ">=3.12"
 dependencies = [
     "anthropic>=0.80",
+    "fastapi>=0.120",
     "fastembed>=0.7",
     "httpx>=0.28",
+    "jinja2>=3.1",
+    "python-multipart>=0.0.20",
     "scikit-learn>=1.6",
+    "uvicorn[standard]>=0.38",
 ]
 
 [project.scripts]
