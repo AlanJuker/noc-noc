@@ -31,3 +31,22 @@ real users type titles that resemble the official ones without matching them.
 | confusable error share | of the wrong first answers, the share that Statistics Canada's own exclusions list as easy to confuse with the right one |
 
 The last one separates "the method is bad" from "the classification itself is ambiguous here".
+
+## Results
+
+Reproduce with `uv run noc-noc eval`.
+
+| Method | top-1 | top-5 | MRR | Confusable errors |
+|---|---|---|---|---|
+| TF-IDF, word 1–2-grams | 65.6% | 88.3% | 0.753 | 37% |
+
+### What goes into a unit group's text (TF-IDF)
+
+| Fields | top-1 | top-5 |
+|---|---|---|
+| title + example titles | 60.9% | 85.9% |
+| + definition | 63.3% | 86.9% |
+| + main duties | **65.6%** | **88.3%** |
+| + title repeated three times | 65.5% | 88.3% |
+
+Character 3–5-grams scored lower than words (56.8% top-1), despite tolerating typos.
