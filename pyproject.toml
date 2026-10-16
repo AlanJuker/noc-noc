@@ -4,7 +4,13 @@ version = "0.1.0"
 description = "Find your NOC 2021 occupation code."
 license = "MIT"
 requires-python = ">=3.12"
-dependencies = ["httpx>=0.28"]
+dependencies = [
+    "httpx>=0.28",
+    "scikit-learn>=1.6",
+]
+
+[project.scripts]
+noc-noc = "noc_noc.cli:main"
 
 [dependency-groups]
 dev = ["mypy>=1.18", "pytest>=8.4", "pytest-cov>=7.0", "ruff>=0.14"]
@@ -24,6 +30,10 @@ ignore = ["PLR2004"]
 [tool.mypy]
 strict = true
 packages = ["noc_noc"]
+
+[[tool.mypy.overrides]]
+module = ["sklearn.*"]  # scikit-learn ships no type information
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
