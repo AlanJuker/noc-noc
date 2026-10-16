@@ -39,6 +39,16 @@ Reproduce with `uv run noc-noc eval`.
 | Method | top-1 | top-5 | MRR | Confusable errors |
 |---|---|---|---|---|
 | TF-IDF, word 1–2-grams | 65.6% | 88.3% | 0.753 | 37% |
+| Embeddings, one vector per unit group | 56.1% | 81.2% | 0.671 | 34% |
+| Embeddings, one vector per title and duty | 68.9% | 93.5% | 0.795 | 38% |
+| **Hybrid: TF-IDF + per-passage embeddings (RRF)** | **72.2%** | **93.6%** | **0.816** | 41% |
+
+Embeddings are `BAAI/bge-small-en-v1.5` through fastembed (ONNX, CPU). Embedding a unit group's whole text
+once is *worse* than TF-IDF: the model truncates long texts, and one vector blurs 50 job titles together.
+Embedding each title and duty separately and scoring a unit group by its best passage works like a nearest
+neighbour over the indexed titles, and beats TF-IDF. Fusing both rankings with reciprocal rank fusion
+(k = 60) is best. As accuracy rises, a larger share of the remaining errors are pairs Statistics Canada
+itself lists as easy to confuse.
 
 ### What goes into a unit group's text (TF-IDF)
 
