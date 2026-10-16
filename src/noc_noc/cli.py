@@ -1,5 +1,6 @@
 import argparse
 import os
+from functools import cache
 from pathlib import Path
 
 import httpx
@@ -7,12 +8,21 @@ import httpx
 from noc_noc.application.benchmark import RetrieverFactory, evaluate, split
 from noc_noc.domain.classification import Classification
 from noc_noc.infrastructure import statcan
+from noc_noc.infrastructure.dense import DenseRetriever, FastEmbedder, HybridRetriever
 from noc_noc.infrastructure.lexical import TfidfRetriever
 
 CACHE_DIR = Path(os.environ.get("NOC_CACHE", "data/cache"))
 
+
+@cache
+def embedder() -> FastEmbedder:
+    return FastEmbedder(CACHE_DIR)
+
+
 METHODS: dict[str, RetrieverFactory] = {
     "tfidf": TfidfRetriever,
+    "dense": lambda c: DenseRetriever(c, embedder()),
+    "hybrid": lambda c: HybridRetriever([TfidfRetriever(c), DenseRetriever(c, embedder())]),
 }
 
 
@@ -21,7 +31,7 @@ def main(argv: list[str] | None = None) -> None:
     commands = parser.add_subparsers(dest="command", required=True)
     search = commands.add_parser("search", help="find the NOC codes for a job title")
     search.add_argument("query")
-    search.add_argument("--method", choices=METHODS, default="tfidf")
+    search.add_argument("--method", choices=METHODS, default="hybrid")
     search.add_argument("-k", type=int, default=5)
     benchmark = commands.add_parser("eval", help="score methods on the held-out benchmark")
     benchmark.add_argument("--method", choices=METHODS, action="append", dest="methods")
