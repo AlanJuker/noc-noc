@@ -1,13 +1,15 @@
 import argparse
 import hashlib
 from functools import cache
+from itertools import chain
+from pathlib import Path
 
 import httpx
 
 from noc_noc.application.benchmark import Case, RetrieverFactory, evaluate, split
 from noc_noc.application.rerank import Reranker
 from noc_noc.domain.classification import Classification
-from noc_noc.infrastructure import statcan
+from noc_noc.infrastructure import job_bank, statcan
 from noc_noc.infrastructure.claude import ClaudeRankModel
 from noc_noc.infrastructure.dense import DenseRetriever, FastEmbedder, HybridRetriever
 from noc_noc.infrastructure.lexical import TfidfRetriever
@@ -37,6 +39,7 @@ METHODS: dict[str, RetrieverFactory] = {
     "rerank": lambda c: Reranker(hybrid(c), c, claude()),
 }
 PAID_METHODS = {"rerank"}
+JOB_BANK_CASES = Path(__file__).parent / "data" / "job_bank_2026_07_09.tsv"
 DEFAULT_PAID_SAMPLE = 200  # about $3.50 with claude-opus-5-5 at low effort
 
 
@@ -50,15 +53,28 @@ def main(argv: list[str] | None = None) -> None:
     benchmark = commands.add_parser("eval", help="score methods on the held-out benchmark")
     benchmark.add_argument("--method", choices=METHODS, action="append", dest="methods")
     benchmark.add_argument(
+        "--benchmark",
+        choices=["statcan", "job-bank"],
+        default="statcan",
+        help="held-out official titles, or real titles from Job Bank postings",
+    )
+    benchmark.add_argument(
         "--sample",
         type=int,
         help=f"score a fixed sample of titles (default for rerank: {DEFAULT_PAID_SAMPLE})",
     )
+    build = commands.add_parser(
+        "build-job-bank", help="rebuild the Job Bank benchmark from monthly postings files"
+    )
+    build.add_argument("postings", type=Path, nargs="+", help="Job Bank CSV files (UTF-16)")
+    build.add_argument("--out", type=Path, default=JOB_BANK_CASES)
     args = parser.parse_args(argv)
 
     with httpx.Client(timeout=60) as client:
         classification = statcan.load(CACHE_DIR, client)
-    paid = PAID_METHODS & ({args.method} if args.command == "search" else set(args.methods or []))
+    paid = PAID_METHODS & (
+        {args.method} if args.command == "search" else set(getattr(args, "methods", None) or [])
+    )
     try:
         run(args, classification)
     except TypeError as error:
@@ -74,12 +90,17 @@ def main(argv: list[str] | None = None) -> None:
 def run(args: argparse.Namespace, classification: Classification) -> None:
     if args.command == "search":
         print(run_search(classification, args.method, args.query, args.k))
+    elif args.command == "build-job-bank":
+        postings = chain.from_iterable(job_bank.read_postings(p) for p in args.postings)
+        cases = job_bank.build_cases(postings, classification)
+        job_bank.write_cases(cases, args.out)
+        print(f"{len(cases):,} titles over {len({c.code for c in cases})} codes → {args.out}")
     else:
         methods = args.methods or [m for m in METHODS if m not in PAID_METHODS]
         sample = args.sample
         if sample is None and PAID_METHODS & set(methods):
             sample = DEFAULT_PAID_SAMPLE
-        print(run_eval(classification, methods, sample))
+        print(run_eval(classification, methods, sample, args.benchmark))
 
 
 def run_search(classification: Classification, method: str, query: str, k: int) -> str:
@@ -106,11 +127,20 @@ def sample_cases(cases: list[Case], size: int | None) -> list[Case]:
     return sorted(cases, key=lambda c: hashlib.sha256(c.query.encode()).hexdigest())[:size]
 
 
-def run_eval(classification: Classification, methods: list[str], sample: int | None = None) -> str:
-    index, all_cases = split(classification)
+def run_eval(
+    classification: Classification,
+    methods: list[str],
+    sample: int | None = None,
+    benchmark: str = "statcan",
+) -> str:
+    if benchmark == "job-bank":
+        # These titles were filtered so none of them is in the classification
+        index, all_cases = classification, job_bank.read_cases(JOB_BANK_CASES)
+    else:
+        index, all_cases = split(classification)
     cases = sample_cases(all_cases, sample)
     rows = [
-        f"{len(cases):,} held-out titles"
+        f"{len(cases):,} {'Job Bank' if benchmark == 'job-bank' else 'held-out'} titles"
         + (f" (fixed sample of {len(all_cases):,})" if sample else "")
         + "\n",
         "| Method | top-1 | top-5 | MRR | Confusable errors |",

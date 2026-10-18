@@ -123,3 +123,25 @@ def test_other_type_errors_are_not_disguised(cached: Path, monkeypatch: pytest.M
     monkeypatch.setattr(cli, "run_search", broken)
     with pytest.raises(TypeError, match="a real bug"):
         cli.main(["search", "barista", "--method", "tfidf"])
+
+
+def test_build_and_evaluate_the_job_bank_benchmark(
+    cached: Path,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    postings = tmp_path / "postings.csv"
+    postings.write_text(
+        "Original Job Title\tNOC21 Code\tOfficial Language\n"
+        "Espresso Bar Attendant\t65201\tEnglish\nBackend Developer\t21232\tEnglish\n",
+        encoding="utf-16",
+    )
+    out = tmp_path / "job_bank.tsv"
+    monkeypatch.setattr(cli, "JOB_BANK_CASES", out)
+
+    cli.main(["build-job-bank", str(postings), "--out", str(out)])
+    assert capsys.readouterr().out.startswith("2 titles over 2 codes")
+
+    cli.main(["eval", "--benchmark", "job-bank", "--method", "tfidf"])
+    assert capsys.readouterr().out.startswith("2 Job Bank titles")
