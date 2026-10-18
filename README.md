@@ -16,30 +16,32 @@ Statistics Canada's own data before it's allowed into the product.
 
 ## Results
 
-5,468 job titles from Statistics Canada, held out of the index ([how the benchmark works](docs/benchmark.md)):
+Two benchmarks ([how they work](docs/benchmark.md)): 5,468 official Statistics Canada titles held out of the
+index, and 4,242 **real titles from Job Bank postings**, as employers wrote them.
 
-| Method | top-1 | top-5 | MRR |
-|---|---|---|---|
-| TF-IDF baseline | 65.6% | 88.3% | 0.753 |
-| Embeddings, one vector per unit group | 56.1% | 81.2% | 0.671 |
-| Embeddings, one vector per title and duty | 68.9% | 93.5% | 0.795 |
-| **Hybrid (reciprocal rank fusion)** | **72.2%** | **93.6%** | **0.816** |
-| Hybrid + Claude reranking | *not measured yet* | | |
+| Method | Official titles: top-1 / top-5 | Real Job Bank titles: top-1 / top-5 |
+|---|---|---|
+| TF-IDF baseline | 65.6% / 88.3% | 51.1% / 72.6% |
+| Embeddings, one vector per unit group | 56.1% / 81.2% | |
+| Embeddings, one vector per title and duty | 68.9% / 93.5% | 58.7% / 79.3% |
+| **Hybrid (reciprocal rank fusion)** | **72.2% / 93.6%** | **59.1% / 79.4%** |
+| Hybrid + Claude reranking | *not measured yet* | *not measured yet* |
 
 What the numbers decided:
 
 - **The obvious embedding design lost to TF-IDF.** One vector per unit group blurs about 50 job titles together
   and gets truncated. One vector per title and duty, scoring a group by its best passage, wins.
 - **The hybrid ships**: the right code is in the first five answers for 93.6% of held-out titles.
+- **Real titles are about 13 points harder.** The methods keep their order, and embeddings matter more on messy
+  titles.
 - **The remaining mistakes are increasingly genuine ambiguity.** 41% of the hybrid's wrong first answers are
   pairs that Statistics Canada's own exclusions list as easy to confuse.
 
 ### Known gap
 
-The benchmark covers job titles, but people describe their work in sentences, and that's where the hybrid is
-weakest ("I drive for Uber at night" ranks hotel front desk clerks first). Measuring descriptions is
-[#12](https://github.com/AlanJuker/noc-noc/issues/12); it's also where the Claude reranker should earn its
-cost.
+Both benchmarks are job titles, but people also describe their work in sentences, and that's where the hybrid
+is weakest ("I drive for Uber at night" ranks hotel front desk clerks first). There's no open dataset of
+descriptions with codes yet; it's also where the Claude reranker should earn its cost.
 
 ## How it works
 
@@ -77,13 +79,15 @@ uv run noc-noc eval --method hybrid --method rerank --sample 200
 
 ## Tests and CI
 
-63 tests at 95% coverage, `mypy --strict` and ruff on every push. The language model is tested against a mocked
+68 tests at 95% coverage, `mypy --strict` and ruff on every push. The language model is tested against a mocked
 HTTP API, and CI never downloads the embedding model: a deterministic word-hashing embedder stands in for it.
 
 ## Data and disclaimer
 
 NOC 2021 Version 1.0 from Statistics Canada, under the
-[Statistics Canada Open Licence](https://www.statcan.gc.ca/en/terms-conditions/open-licence).
+[Statistics Canada Open Licence](https://www.statcan.gc.ca/en/terms-conditions/open-licence). The Job Bank
+benchmark contains information licensed under the
+[Open Government Licence – Canada](https://open.canada.ca/en/open-government-licence-canada).
 
 **Not immigration advice**, and not affiliated with the Government of Canada. Always confirm your code on
 [canada.ca](https://www.canada.ca/en/immigration-refugees-citizenship/services/immigrate-canada/find-national-occupation-code.html).

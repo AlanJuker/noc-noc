@@ -73,3 +73,34 @@ the hybrid on the same fixed sample of 200 titles (about $3.50):
 ```bash
 uv run noc-noc eval --method hybrid --method rerank --sample 200
 ```
+
+## Second benchmark: real titles from Job Bank
+
+The official example titles are clean. Employers write things like `*Project Engineer (2 Positions) - North
+Shore Wastewater Treatment Plant`. Canada's Job Bank publishes every posting with the title as written and the
+NOC 2021 code it was filed under
+([dataset](https://open.canada.ca/data/en/dataset/ea639e28-c0fc-48bf-b5dd-b8899bd43072), Open Government
+Licence – Canada).
+
+From the July–September 2026 files (about 146,000 postings), a title is kept when:
+
+- the posting's official language is English
+- the title isn't `NA` (about two thirds of postings) and the code is a NOC 2021 unit group
+- the title isn't an official example title or unit group title, so no method can look it up
+- every posting with that title was filed under the same code
+
+That leaves **4,242 distinct titles over 315 unit groups**, committed in
+[`src/noc_noc/data/job_bank_2026_07_09.tsv`](../src/noc_noc/data/job_bank_2026_07_09.tsv). The index is the full
+classification. Caveats: the codes were chosen by employers, so some labels are wrong, and about 3% of the
+titles are in French despite the language filter.
+
+| Method | top-1 | top-5 | MRR | Confusable errors |
+|---|---|---|---|---|
+| TF-IDF | 51.1% | 72.6% | 0.604 | 25% |
+| Embeddings, per title and duty | 58.7% | 79.3% | 0.677 | 29% |
+| **Hybrid** | **59.1%** | **79.4%** | **0.679** | 27% |
+
+Real titles are about 13 points harder than official ones. The methods keep their order, and embeddings gain
+more over TF-IDF on messy titles (+7.6 points of top-1, against +3.3 on official titles).
+
+Reproduce with `uv run noc-noc eval --benchmark job-bank`.
