@@ -5,7 +5,7 @@ description = "Find your NOC 2021 occupation code."
 license = "MIT"
 requires-python = ">=3.12"
 dependencies = [
-    "anthropic>=0.80",
+    "anthropic>=2.0",
     "fastapi>=0.120",
     "fastembed>=0.7",
     "httpx>=0.28",
