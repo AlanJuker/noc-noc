@@ -1260,7 +1260,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "anthropic", specifier = ">=0.80" },
+    { name = "anthropic", specifier = ">=2.0" },
     { name = "fastapi", specifier = ">=0.120" },
     { name = "fastembed", specifier = ">=0.7" },
     { name = "httpx", specifier = ">=0.28" },
